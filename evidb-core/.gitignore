@@ -1,0 +1,20 @@
+/.metadata/
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+
+# Eclipse
+.project
+.classpath
+.settings
+
+# Maven
+target
+
+# Other
+*.log
+*.swp
+*.bak

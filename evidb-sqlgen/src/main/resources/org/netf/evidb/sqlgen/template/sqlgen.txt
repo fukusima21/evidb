@@ -1,0 +1,13 @@
+[# th:each="tableMeta : ${tableMetas}"]- table-name : [( ${tableMeta.name} )]
+  column-name :
+[# th:each="columnMeta,stat : ${tableMeta.columnMetas}"]    [( ${columnMeta.name} )] : [( ${columnMeta.comment} )]
+[/]  query : |
+    SELECT
+      [# th:each="columnMeta,stat : ${tableMeta.columnMetas}"][( ${stat.first ? '':','} )] [( ${columnMeta.name} )] [/]
+    FROM
+      [( ${tableMeta.name} )]
+    [# th:unless="${#lists.isEmpty(tableMeta.primaryKeyColumnMetas)}" ]ORDER BY
+      [# th:each="columnMeta,stat : ${tableMeta.primaryKeyColumnMetas}"][( ${stat.first ? '':','} )] [( ${columnMeta.name} )] [/]
+    [/];
+
+[/]
