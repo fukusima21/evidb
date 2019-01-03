@@ -74,6 +74,9 @@ public class Sqlgen extends Task {
 	/** 出力ファイル名 */
 	private String outputPath;
 
+	/**
+	 * anttask-main
+	 */
 	@Override
 	public void execute() throws BuildException {
 
@@ -115,6 +118,10 @@ public class Sqlgen extends Task {
 
 	}
 
+	/**
+	 * ＤＢコネクション取得
+	 * @return
+	 */
 	private Connection getConnection() {
 
 		try {
@@ -130,6 +137,10 @@ public class Sqlgen extends Task {
 
 	}
 
+	/**
+	 * テンプレートディレクトリの設定
+	 * @param templateEngine
+	 */
 	private void addTemplateResolver(TemplateEngine templateEngine) {
 
 		int order = 1;

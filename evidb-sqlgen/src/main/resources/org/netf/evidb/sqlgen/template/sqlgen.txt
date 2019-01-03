@@ -1,4 +1,5 @@
 [# th:each="tableMeta : ${tableMetas}"]- table-name : [( ${tableMeta.name} )]
+  table-comment : [( ${tableMeta.comment} )]
   column-name :
 [# th:each="columnMeta,stat : ${tableMeta.columnMetas}"]    [( ${columnMeta.name} )] : [( ${columnMeta.comment} )]
 [/]  query : |
