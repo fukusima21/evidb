@@ -1,0 +1,42 @@
+spring:
+  thymeleaf:
+    enabled: false
+  freemarker:
+    enabled: false
+  devtools:
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+  flyway:
+    enabled: false
+  main:
+    web-application-type: NONE
+  datasource:
+    continue-on-error: true
+    url: jdbc:postgresql://localhost:5432/dvdrental?currentSchema=public
+    username: postgres
+    password: admin
+    driver-class-name: org.postgresql.Driver
+    sql-script-encoding: UTF-8
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      auto-commit: true
+      maximum-pool-size: 1
+      minimum-idle: 0
+      read-only: false
+  batch:
+    initializer:
+      enabled: false
+    enable: true
+    job:
+      names: dumpJob
+
+logging:
+  level:
+    root: INFO
+    org.netf.evidb.dump.batch: INFO
+    org.springframework.jdbc.datasource.DataSourceTransactionManager: TRACE
+    org.springframework.jdbc.core.JdbcTemplate: TRACE
+
+ 
