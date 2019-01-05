@@ -5,7 +5,7 @@ import java.util.Map;
 import lombok.Data;
 
 @Data
-public class ItemDto {
+public class Item {
 	private String tableName;
 	private String tableComment;
 	private Map<String, String> columnName;

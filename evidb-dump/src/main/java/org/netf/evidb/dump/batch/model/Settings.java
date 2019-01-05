@@ -11,9 +11,9 @@ import lombok.Data;
 
 @Data
 @Configuration
-@PropertySource(value = "classpath:sqlgen.yml", factory = YamlPropertySourceFactory.class)
+@PropertySource(name = "sqlgen", value = { "classpath:sqlgen.yml", "classpath:config/sqlgen.yml", "file:./sqlgen.yml",
+		"file:.config/sqlgen.yml" }, factory = YamlPropertySourceFactory.class, ignoreResourceNotFound = true)
 @ConfigurationProperties(prefix = "settings")
 public class Settings {
-
-	private List<ItemDto> items;
+	private List<Item> items;
 }

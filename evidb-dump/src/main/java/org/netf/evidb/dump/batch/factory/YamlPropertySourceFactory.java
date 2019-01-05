@@ -13,15 +13,15 @@ public class YamlPropertySourceFactory extends DefaultPropertySourceFactory {
 	@Override
 	public PropertySource<?> createPropertySource(String name, EncodedResource resource) throws IOException {
 
-		if (resource == null) {
-			return super.createPropertySource(name, resource);
-		}
+		if (resource != null && resource.getResource().exists()) {
 
-		List<PropertySource<?>> propertySourceList = new YamlPropertySourceLoader()
-				.load(resource.getResource().getFilename(), resource.getResource());
+			List<PropertySource<?>> propertySourceList = new YamlPropertySourceLoader()
+					.load(resource.getResource().getFilename(), resource.getResource());
 
-		if (!propertySourceList.isEmpty()) {
-			return propertySourceList.iterator().next();
+			if (!propertySourceList.isEmpty()) {
+				return propertySourceList.iterator().next();
+			}
+
 		}
 
 		return super.createPropertySource(name, resource);
