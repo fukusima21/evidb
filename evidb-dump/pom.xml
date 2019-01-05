@@ -43,6 +43,12 @@
 			<artifactId>postgresql</artifactId>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/com.opencsv/opencsv -->
+		<dependency>
+			<groupId>com.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
+		</dependency>
+
 	</dependencies>
 	<build>
 		<plugins>
