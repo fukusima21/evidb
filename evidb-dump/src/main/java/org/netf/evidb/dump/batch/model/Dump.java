@@ -19,4 +19,5 @@ public class Dump {
 	private String username;
 	private String password;
 	private String driverClassName;
+	private String nullValue = "\u200B(NULL)\u200B";
 }

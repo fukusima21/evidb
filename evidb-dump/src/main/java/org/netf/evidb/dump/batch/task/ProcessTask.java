@@ -20,9 +20,7 @@ import org.springframework.stereotype.Service;
 import com.opencsv.CSVWriter;
 
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @AllArgsConstructor
 @Service
 public class ProcessTask implements Tasklet {
@@ -44,12 +42,18 @@ public class ProcessTask implements Tasklet {
 		for (Item item : items) {
 
 			// 出力ファイルパス生成
-			File outputFile = new File(outputDir, item.getTableName() + ".txt");
+			File outputFile = new File(outputDir, item.getTableName() + ".csv");
 
-			try (CSVWriter csvWriter = new CSVWriter(
-					new OutputStreamWriter(new FileOutputStream(outputFile), "utf-8"))) {
+			try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(outputFile), "utf-8");
+					CSVWriter csvWriter = new CSVWriter(osw)) {
 
-				// ファイル出力
+				// BOM
+				osw.write("\ufeff");
+
+				// ヘッダー出力
+				csvWriter.writeNext(item.getColumnName().keySet().toArray(new String[0]));
+
+				// データ出力
 				genericDao.selectAll(item.getQuery(), stream -> {
 					stream.forEach(entity -> {
 
@@ -57,7 +61,7 @@ public class ProcessTask implements Tasklet {
 							if (mapper != null) {
 								return mapper.toString();
 							}
-							return null;
+							return dump.getNullValue();
 						}).toArray(String[]::new);
 
 						csvWriter.writeNext(array);
@@ -65,6 +69,8 @@ public class ProcessTask implements Tasklet {
 
 					return null;
 				});
+
+				csvWriter.close();
 
 			} finally {
 
