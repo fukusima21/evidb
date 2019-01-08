@@ -32,53 +32,59 @@ public class ProcessTask implements Tasklet {
 	@Override
 	public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
 
+		List<Item> items = settings.getItems();
+
+		for (Item item : items) {
+			outputFile(item);
+		}
+
+		return RepeatStatus.FINISHED;
+	}
+
+	/**
+	 * 検索結果をファイルへ出力する。
+	 *
+	 * @param item
+	 * @throws Exception
+	 */
+	private void outputFile(Item item) throws Exception {
+
 		// 出力フォルダ作成
 		File outputDir = new File(dump.getOutputDir(),
 				DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now()));
 		outputDir.mkdirs();
 
-		List<Item> items = settings.getItems();
+		// 出力ファイルパス生成
+		File outputFile = new File(outputDir, item.getTableName() + ".csv");
 
-		for (Item item : items) {
+		try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(outputFile), "utf-8");
+				CSVWriter csvWriter = new CSVWriter(osw)) {
 
-			// 出力ファイルパス生成
-			File outputFile = new File(outputDir, item.getTableName() + ".csv");
+			// BOM
+			osw.write("\ufeff");
 
-			try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(outputFile), "utf-8");
-					CSVWriter csvWriter = new CSVWriter(osw)) {
+			// ヘッダー出力
+			csvWriter.writeNext(item.getColumnName().keySet().toArray(new String[0]));
 
-				// BOM
-				osw.write("\ufeff");
-
-				// ヘッダー出力
-				csvWriter.writeNext(item.getColumnName().keySet().toArray(new String[0]));
-
-				// データ出力
-				genericDao.selectAll(item.getQuery(), stream -> {
-					stream.forEach(entity -> {
-
-						String[] array = entity.values().stream().map(mapper -> {
-							if (mapper != null) {
-								return mapper.toString();
-							}
-							return dump.getNullValue();
-						}).toArray(String[]::new);
-
-						csvWriter.writeNext(array);
-					});
-
-					return null;
+			// データ出力
+			genericDao.selectAll(item.getQuery(), stream -> {
+				stream.forEach(entity -> {
+					String[] array = entity.values().stream().map(mapper -> {
+						if (mapper != null) {
+							return mapper.toString();
+						}
+						return dump.getNullValue();
+					}).toArray(String[]::new);
+					csvWriter.writeNext(array);
 				});
 
-				csvWriter.close();
+				return null;
+			});
 
-			} finally {
-
-			}
+			csvWriter.close();
 
 		}
 
-		return RepeatStatus.FINISHED;
 	}
 
 }
