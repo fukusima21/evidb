@@ -1,6 +1,0 @@
-dump:
-  output-dir: C:\opt\EvidenceDB\document\tools\dump\dumps
-  url: jdbc:postgresql://localhost:5432/dvdrental?currentSchema=public
-  username: postgres
-  password: admin
-  driver-class-name: org.postgresql.Driver

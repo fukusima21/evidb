@@ -39,7 +39,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class Sqlgen extends Task {
+public class SqlgenTask extends Task {
 
 	/** DB driver */
 	private String driver;

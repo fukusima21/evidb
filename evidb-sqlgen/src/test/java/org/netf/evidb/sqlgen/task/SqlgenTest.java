@@ -12,7 +12,7 @@ public class SqlgenTest {
 
 		String outputPath = SqlgenTest.class.getResource("sqlgen.yml").getFile();
 
-		Sqlgen sqlgen = new Sqlgen();
+		SqlgenTask sqlgen = new SqlgenTask();
 
 		sqlgen.setUser("postgres");
 		sqlgen.setPassword("admin");

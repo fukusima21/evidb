@@ -1,4 +1,4 @@
-package org.netf.evidb.dump.batch.model;
+package org.netf.evidb.dump.model;
 
 import java.util.Map;
 
