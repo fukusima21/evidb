@@ -1,6 +1,7 @@
 package org.netf.evidb.dump.task;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,6 +53,9 @@ public class DumpTask extends Task {
 	/** null value */
 	private String nullValue = "\u200B(NULL)\u200B";
 
+	/** 設定ファイル */
+	private String configFile;
+
 	/* (非 Javadoc)
 	 * @see org.apache.tools.ant.Task#execute()
 	 */
@@ -69,8 +73,7 @@ public class DumpTask extends Task {
 
 		settings.setItems(new ArrayList<Item>());
 
-		try (InputStream in = Thread.currentThread().getContextClassLoader()
-				.getResourceAsStream("sqlgen.yml");
+		try (InputStream in = new FileInputStream(configFile);
 				InputStreamReader reader = new InputStreamReader(in, "utf-8")) {
 
 			Map<String, Object> yamlMap = yaml.load(in);
