@@ -75,6 +75,12 @@
 			<artifactId>snakeyaml</artifactId>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/org.seasar.doma/doma -->
+		<dependency>
+			<groupId>org.seasar.doma</groupId>
+			<artifactId>doma</artifactId>
+		</dependency>
+
 	</dependencies>
 
 </project>

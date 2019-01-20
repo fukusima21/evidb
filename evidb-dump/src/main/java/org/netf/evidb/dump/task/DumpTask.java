@@ -8,9 +8,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.InvocationTargetException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -21,8 +18,13 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
 import org.netf.evidb.core.exception.ApplicationException;
+import org.netf.evidb.dump.config.AppConfig;
+import org.netf.evidb.dump.dao.GenericDao;
 import org.netf.evidb.dump.model.Item;
 import org.netf.evidb.dump.model.Settings;
+import org.seasar.doma.internal.WrapException;
+import org.seasar.doma.internal.util.ClassUtil;
+import org.seasar.doma.jdbc.tx.TransactionManager;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
@@ -56,20 +58,53 @@ public class DumpTask extends Task {
 	/** 設定ファイル */
 	private String configFile;
 
+	private GenericDao genericDao;
+
 	/* (非 Javadoc)
 	 * @see org.apache.tools.ant.Task#execute()
 	 */
 	@Override
 	public void execute() throws BuildException {
 
+		// 設定ファイル読み込み
+		setupConfig();
+
+		// Dao 取得
+		genericDao = getGenericDao();
+
+		Settings settings = Settings.get();
+
+		// 出力フォルダ作成
+		File outputDir = new File(getOutputDir(),
+				DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now()));
+		outputDir.mkdirs();
+
+		TransactionManager tm = AppConfig.singleton().getTransactionManager();
+
+		tm.required(() -> {
+			for (Item item : settings.getItems()) {
+				outputFile(outputDir, item);
+			}
+		});
+
 	}
 
+	/**
+	 * 設定ファイル読み込み
+	 */
 	@SuppressWarnings("unchecked")
-	private Settings getSettings() {
+	private void setupConfig() {
+
+		Settings settings = Settings.get();
+
+		settings.setDriver(driver);
+		settings.setUrl(url);
+		settings.setUser(user);
+		settings.setPassword(password);
+		settings.setOutputDir(outputDir);
+		settings.setNullValue(nullValue);
 
 		Yaml yaml = new Yaml(new Constructor());
-
-		Settings settings = new Settings();
 
 		settings.setItems(new ArrayList<Item>());
 
@@ -93,27 +128,6 @@ public class DumpTask extends Task {
 			throw new ApplicationException(e.getMessage(), e);
 		}
 
-		return settings;
-
-	}
-
-	/**
-	 * ＤＢコネクション取得
-	 * @return
-	 */
-	private Connection getConnection() {
-
-		try {
-			Class.forName(driver);
-
-			return DriverManager.getConnection(url, user, password);
-
-		} catch (ClassNotFoundException e) {
-			throw new ApplicationException(e.getMessage(), e);
-		} catch (SQLException e) {
-			throw new ApplicationException(e.getMessage(), e);
-		}
-
 	}
 
 	/**
@@ -122,12 +136,7 @@ public class DumpTask extends Task {
 	 * @param item
 	 * @throws Exception
 	 */
-	private void outputFile(Item item) throws Exception {
-
-		// 出力フォルダ作成
-		File outputDir = new File(getOutputDir(),
-				DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now()));
-		outputDir.mkdirs();
+	private void outputFile(File outputDir, Item item) {
 
 		// 出力ファイルパス生成
 		File outputFile = new File(outputDir, item.getTableName() + ".csv");
@@ -141,23 +150,32 @@ public class DumpTask extends Task {
 			// ヘッダー出力
 			csvWriter.writeNext(item.getColumnName().keySet().toArray(new String[0]));
 
-			//			// データ出力
-			//			genericDao.selectAll(item.getQuery(), stream -> {
-			//				stream.forEach(entity -> {
-			//					String[] array = entity.values().stream().map(mapper -> {
-			//						if (mapper != null) {
-			//							return mapper.toString();
-			//						}
-			//						return dump.getNullValue();
-			//					}).toArray(String[]::new);
-			//					csvWriter.writeNext(array);
-			//				});
-			//
-			//				return null;
-			//			});
+			genericDao.selectAll(item.getQuery(), stream -> {
+				stream.forEach(entity -> {
+					String[] array = entity.values().stream().map(mapper -> {
+						if (mapper != null) {
+							return mapper.toString();
+						}
+						return getNullValue();
+					}).toArray(String[]::new);
+					csvWriter.writeNext(array);
+				});
+				return null;
+			});
 
-			csvWriter.close();
+		} catch (IOException e) {
+			throw new ApplicationException(e.getMessage(), e);
+		}
 
+	}
+
+	private GenericDao getGenericDao() {
+
+		try {
+			Object newInstance = ClassUtil.newInstance(Class.forName("org.netf.evidb.dump.dao.GenericDaoImpl"));
+			return (GenericDao) newInstance;
+		} catch (ClassNotFoundException | WrapException e) {
+			throw new ApplicationException(e.getMessage(), e);
 		}
 
 	}
