@@ -24,6 +24,15 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+
+<!-- https://mvnrepository.com/artifact/net.sf.jett/jett -->
+<dependency>
+    <groupId>net.sf.jett</groupId>
+    <artifactId>jett</artifactId>
+    <type>pom</type>
+</dependency>
+
 	</dependencies>
 	<build>
 		<plugins>
