@@ -69,6 +69,9 @@ public class DumpTask extends Task {
 		// 設定ファイル読み込み
 		setupConfig();
 
+		// JDBCドライバーのロード
+		loadDriver();
+
 		// Dao 取得
 		genericDao = getGenericDao();
 
@@ -125,6 +128,21 @@ public class DumpTask extends Task {
 			}
 
 		} catch (IOException | IllegalAccessException | InvocationTargetException e) {
+			throw new ApplicationException(e.getMessage(), e);
+		}
+
+	}
+
+	/**
+	 * ドライバーロード
+	 * @return
+	 */
+	private void loadDriver() {
+
+		try {
+			Class.forName(driver);
+
+		} catch (ClassNotFoundException e) {
 			throw new ApplicationException(e.getMessage(), e);
 		}
 
