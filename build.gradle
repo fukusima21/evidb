@@ -1,0 +1,50 @@
+allprojects  {
+  group = 'org.netf.evidb'
+  version = '1.0-SNAPSHOT'
+}
+
+subprojects {
+  apply plugin: 'java'
+  apply plugin: 'eclipse'
+
+  repositories {
+    mavenCentral()
+    mavenLocal()
+  }
+
+  sourceCompatibility = 1.8
+  targetCompatibility = 1.8
+
+  tasks.withType(JavaCompile) {
+  	options.encoding = 'UTF-8'
+  }
+
+  dependencies {
+    compileOnly group: 'org.projectlombok', name: 'lombok', version:'1.18.4'
+  }
+
+  // DOMA2用設定
+  // JavaクラスとSQLファイルの出力先ディレクトリを同じにする
+  processResources.destinationDir = compileJava.destinationDir
+
+  // コンパイルより前にSQLファイルを出力先ディレクトリにコピーするために依存関係を逆転する
+  compileJava.dependsOn processResources
+
+  eclipse {
+    classpath {
+      defaultOutputDir = file('build/classes/java/main')
+
+        file {
+          whenMerged {
+	        	entries.each { source ->
+					if (source.kind == 'src' && !source.path.startsWith('/')) {
+						// only Source-folders in the project starting with '/' are project-references
+						source.output = null
+        			}
+				}
+    	    }
+	    }
+	}
+  }
+
+}
