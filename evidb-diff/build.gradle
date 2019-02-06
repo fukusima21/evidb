@@ -1,7 +1,8 @@
 
 description = 'evidb-diff'
 dependencies {
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-batch', version:'2.1.1.RELEASE'
+    compile group: 'org.apache.ant', name: 'ant', version:'1.10.4'
+    compile group: 'ch.qos.logback', name: 'logback-classic', version:'1.2.3'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version:'3.7'
     compile group: 'net.sf.jett', name: 'jett', version:'0.11.0'
-    testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version:'2.0.3.RELEASE'
 }
