@@ -109,8 +109,6 @@ public class DiffTask extends Task {
 
 		System.out.println(String.format("%s - %d", fileName, deltas.size()));
 
-
-
 	}
 
 	/**

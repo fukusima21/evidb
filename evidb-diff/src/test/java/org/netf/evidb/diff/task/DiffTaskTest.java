@@ -74,6 +74,7 @@ public class DiffTaskTest {
 
 		diffTask.diffAll();
 
+
 	}
 
 }
