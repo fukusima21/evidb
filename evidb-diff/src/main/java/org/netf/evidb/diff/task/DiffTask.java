@@ -2,17 +2,26 @@ package org.netf.evidb.diff.task;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.comparator.NameFileComparator;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
 import org.netf.evidb.core.exception.ApplicationException;
@@ -24,6 +33,7 @@ import difflib.DiffUtils;
 import difflib.Patch;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import net.sf.jett.transform.ExcelTransformer;
 
 /**
  * DiffTask
@@ -36,6 +46,8 @@ import lombok.EqualsAndHashCode;
 public class DiffTask extends Task {
 
 	private String dumpDir;
+
+	private String reportDir;
 
 	private String before;
 
@@ -83,16 +95,56 @@ public class DiffTask extends Task {
 	 */
 	protected void diffAll() {
 
+		List<org.netf.evidb.diff.model.Delta> deltas = new ArrayList<>();
+
 		File beforeDir = new File(before);
 		File afterDir = new File(after);
 
 		List<String> beforeFiles = getFilenameList(beforeDir);
 
 		for (String beforeFile : beforeFiles) {
+
 			List<Set<String>> beforeCsv = readCSVFile(new File(beforeDir, beforeFile));
 			List<Set<String>> afterCsv = readCSVFile(new File(afterDir, beforeFile));
 			Patch<Set<String>> patch = DiffUtils.diff(beforeCsv, afterCsv);
-			reportDiff(beforeFile, patch);
+			org.netf.evidb.diff.model.Delta delta = reportDiff(beforeFile, patch);
+
+			delta.setBefore(beforeCsv.size());
+			delta.setAfter(afterCsv.size());
+
+			deltas.add(delta);
+		}
+
+		Map<String, Object> beans = new HashMap<>();
+		beans.put("deltas", deltas);
+
+		// 出力フォルダ作成
+		File reportDir = new File(getReportDir());
+		reportDir.mkdirs();
+
+		// 出力ファイル名作成
+		String reportFile = String.format("%s.xlsx",
+				DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now()));
+
+		List<String> templateSheetNames = new ArrayList<String>();
+		List<String> sheetNames = new ArrayList<String>();
+
+		templateSheetNames.add("summary");
+		sheetNames.add("サマリー");
+
+		templateSheetNames.add("report");
+		sheetNames.add("dummy");
+
+		ExcelTransformer transformer = new ExcelTransformer();
+
+		try (InputStream in = Thread.currentThread().getContextClassLoader()
+				.getResourceAsStream("org/netf/evidb/diff/template/report.xlsx");
+				OutputStream out = new FileOutputStream(new File(reportDir, reportFile))) {
+			Workbook workbook = transformer.transform(in, templateSheetNames, sheetNames, Arrays.asList(beans));
+			workbook.write(out);
+			workbook.close();
+		} catch (InvalidFormatException | IOException e) {
+			throw new ApplicationException(e.getMessage(), e);
 		}
 
 	}
@@ -103,11 +155,33 @@ public class DiffTask extends Task {
 	 * @param fileName
 	 * @param patch
 	 */
-	private void reportDiff(String fileName, Patch<Set<String>> patch) {
+	private org.netf.evidb.diff.model.Delta reportDiff(String fileName, Patch<Set<String>> patch) {
+
+		org.netf.evidb.diff.model.Delta delta = new org.netf.evidb.diff.model.Delta();
 
 		List<Delta<Set<String>>> deltas = patch.getDeltas();
 
-		System.out.println(String.format("%s - %d", fileName, deltas.size()));
+		delta.setCreate(0);
+		delta.setUpdate(0);
+		delta.setDelete(0);
+
+		for (Delta<Set<String>> d : deltas) {
+
+			int before = d.getOriginal().size();
+			int after = d.getRevised().size();
+
+			if (before == after) {
+				delta.setUpdate(delta.getUpdate() + before);
+			} else if (before < after) {
+				delta.setCreate(delta.getCreate() + after - before);
+			} else if (before > after) {
+				delta.setDelete(delta.getDelete() + before - after);
+			}
+
+		}
+
+		delta.setName(fileName);
+		return delta;
 
 	}
 

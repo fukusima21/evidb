@@ -7,7 +7,10 @@ import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.BlockJUnit4ClassRunner;
 
+@RunWith(BlockJUnit4ClassRunner.class)
 public class DiffTaskTest {
 
 	@Test
@@ -68,12 +71,13 @@ public class DiffTaskTest {
 		DiffTask diffTask = new DiffTask();
 
 		String dumpDir = this.getClass().getResource("./dump").toURI().getPath();
+		String reportDir = this.getClass().getResource("./report").toURI().getPath();
 
+		diffTask.setReportDir(reportDir);
 		diffTask.setBefore(new File(dumpDir, "20190107004008").getAbsolutePath());
 		diffTask.setAfter(new File(dumpDir, "20190107004829").getAbsolutePath());
 
 		diffTask.diffAll();
-
 
 	}
 
