@@ -3,7 +3,6 @@ package org.netf.evidb.diff.task;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -30,7 +29,7 @@ public class DiffTaskTest {
 	}
 
 	@Test
-	public void testGetFiles() throws Exception {
+	public void testGetFilenameList() throws Exception {
 
 		DiffTask diffTask = new DiffTask();
 
@@ -55,13 +54,11 @@ public class DiffTaskTest {
 
 		File inFile = new File(new File(dumpDir, "20190107004008"), "address.csv");
 
-		List<Set<String>> results = diffTask.readCSVFile(inFile);
+		List<String> results = diffTask.readCSVFile(inFile);
 
-		String[] expected = new String[] { "\ufeffaddress_id", "address", "address2", "district", "city_id",
-				"postal_code",
-				"phone", "last_update" };
+		String expected = "\ufeff\"address_id\",\"address\",\"address2\",\"district\",\"city_id\",\"postal_code\",\"phone\",\"last_update\"";
 
-		Assert.assertArrayEquals(expected, results.get(0).toArray(new String[0]));
+		Assert.assertEquals(expected, results.get(0));
 
 	}
 
@@ -72,6 +69,8 @@ public class DiffTaskTest {
 
 		String dumpDir = this.getClass().getResource("./dump").toURI().getPath();
 		String reportDir = this.getClass().getResource("./report").toURI().getPath();
+
+		System.out.println(reportDir);
 
 		diffTask.setReportDir(reportDir);
 		diffTask.setBefore(new File(dumpDir, "20190107004008").getAbsolutePath());

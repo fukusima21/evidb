@@ -1,5 +1,6 @@
 package org.netf.evidb.diff.task;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -13,26 +14,28 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.io.comparator.NameFileComparator;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
 import org.netf.evidb.core.exception.ApplicationException;
+import org.netf.evidb.diff.model.Item;
 
-import com.opencsv.CSVReader;
+import com.opencsv.CSVParser;
+import com.opencsv.stream.reader.LineReader;
 
 import difflib.Delta;
 import difflib.DiffUtils;
 import difflib.Patch;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import net.sf.jett.model.FillPattern;
 import net.sf.jett.transform.ExcelTransformer;
 
 /**
@@ -52,6 +55,29 @@ public class DiffTask extends Task {
 	private String before;
 
 	private String after;
+
+	private enum FILL_PATTERN {
+
+		NOTHING(FillPattern.NOFILL.toString(), "white"), //
+		HEADER(FillPattern.SOLID.toString(), "lightgreen"), //
+		CHANGE(FillPattern.SOLID.toString(), "yellow"), //
+		ADD(FillPattern.SOLID.toString(), "skyblue"), //
+		DELETE(FillPattern.SOLID.toString(), "grey25percent");
+
+		private String fillPattern;
+		private String fillColor;
+
+		private FILL_PATTERN(String fillPattern, String fillColor) {
+			this.fillPattern = fillPattern;
+			this.fillColor = fillColor;
+		}
+
+		public String getText() {
+			return "fill-pattern: " + fillPattern + ";" +
+					"fill-foreground-color:" + fillColor + ";" +
+					"fill-background-color: white;";
+		}
+	};
 
 	/* (非 Javadoc)
 	 * @see org.apache.tools.ant.Task#execute()
@@ -104,10 +130,16 @@ public class DiffTask extends Task {
 
 		for (String beforeFile : beforeFiles) {
 
-			List<Set<String>> beforeCsv = readCSVFile(new File(beforeDir, beforeFile));
-			List<Set<String>> afterCsv = readCSVFile(new File(afterDir, beforeFile));
-			Patch<Set<String>> patch = DiffUtils.diff(beforeCsv, afterCsv);
-			org.netf.evidb.diff.model.Delta delta = reportDiff(beforeFile, patch);
+			// 変更前CSV読み込み
+			List<String> beforeCsv = readCSVFile(new File(beforeDir, beforeFile));
+
+			// 変更後CSV読み込み
+			List<String> afterCsv = readCSVFile(new File(afterDir, beforeFile));
+
+			// diff
+			Patch<String> patch = DiffUtils.diff(beforeCsv, afterCsv);
+
+			org.netf.evidb.diff.model.Delta delta = reportDiff(beforeFile, patch, beforeCsv, afterCsv);
 
 			delta.setBefore(beforeCsv.size());
 			delta.setAfter(afterCsv.size());
@@ -115,8 +147,7 @@ public class DiffTask extends Task {
 			deltas.add(delta);
 		}
 
-		Map<String, Object> beans = new HashMap<>();
-		beans.put("deltas", deltas);
+		Map<String, Object> beans = null;
 
 		// 出力フォルダ作成
 		File reportDir = new File(getReportDir());
@@ -126,21 +157,32 @@ public class DiffTask extends Task {
 		String reportFile = String.format("%s.xlsx",
 				DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now()));
 
-		List<String> templateSheetNames = new ArrayList<String>();
-		List<String> sheetNames = new ArrayList<String>();
+		List<String> templateSheetNames = new ArrayList<>();
+		List<String> sheetNames = new ArrayList<>();
+		List<Map<String, Object>> params = new ArrayList<>();
 
 		templateSheetNames.add("summary");
-		sheetNames.add("サマリー");
+		sheetNames.add("summary");
+		beans = new HashMap<>();
+		beans.put("deltas", deltas);
+		params.add(beans);
 
-		templateSheetNames.add("report");
-		sheetNames.add("dummy");
+		for (org.netf.evidb.diff.model.Delta d : deltas) {
+			if (!d.getDetails().isEmpty()) {
+				templateSheetNames.add("report");
+				sheetNames.add(d.getName());
+				beans = new HashMap<>();
+				beans.put("delta", d);
+				params.add(beans);
+			}
+		}
 
 		ExcelTransformer transformer = new ExcelTransformer();
 
 		try (InputStream in = Thread.currentThread().getContextClassLoader()
 				.getResourceAsStream("org/netf/evidb/diff/template/report.xlsx");
 				OutputStream out = new FileOutputStream(new File(reportDir, reportFile))) {
-			Workbook workbook = transformer.transform(in, templateSheetNames, sheetNames, Arrays.asList(beans));
+			Workbook workbook = transformer.transform(in, templateSheetNames, sheetNames, params);
 			workbook.write(out);
 			workbook.close();
 		} catch (InvalidFormatException | IOException e) {
@@ -155,27 +197,152 @@ public class DiffTask extends Task {
 	 * @param fileName
 	 * @param patch
 	 */
-	private org.netf.evidb.diff.model.Delta reportDiff(String fileName, Patch<Set<String>> patch) {
+	private org.netf.evidb.diff.model.Delta reportDiff(String fileName, Patch<String> patch,
+			List<String> beforeCsv, List<String> afterCsv) {
+
+		CSVParser csvParser = new CSVParser();
 
 		org.netf.evidb.diff.model.Delta delta = new org.netf.evidb.diff.model.Delta();
 
-		List<Delta<Set<String>>> deltas = patch.getDeltas();
+		List<Delta<String>> deltas = patch.getDeltas();
 
 		delta.setCreate(0);
 		delta.setUpdate(0);
 		delta.setDelete(0);
+		delta.setDetails(new ArrayList<>());
 
-		for (Delta<Set<String>> d : deltas) {
+		if (deltas.size() > 0) {
+			// ヘッダ行の追加
+			List<Item> columns = new ArrayList<>();
+			String[] beforeItems = new String[0];
+
+			try {
+				beforeItems = csvParser.parseLine(beforeCsv.get(0));
+			} catch (IOException e) {
+				throw new ApplicationException(e.getMessage(), e);
+			}
+
+			columns.add(new Item("ステータス", FILL_PATTERN.HEADER.getText()));
+
+			for (String s : beforeItems) {
+				columns.add(new Item(s, FILL_PATTERN.HEADER.getText()));
+			}
+
+			delta.getDetails().add(columns);
+
+		}
+
+		for (Delta<String> d : deltas) {
 
 			int before = d.getOriginal().size();
 			int after = d.getRevised().size();
 
 			if (before == after) {
+
 				delta.setUpdate(delta.getUpdate() + before);
+
+				for (int i = 0; i < before; i++) {
+
+					// 変更前のレコード
+					String beforeStr = d.getOriginal().getLines().get(i);
+					String[] beforeItems = new String[0];
+
+					try {
+						beforeItems = csvParser.parseLine(beforeStr);
+					} catch (IOException e) {
+						throw new ApplicationException(e.getMessage(), e);
+					}
+
+					// 変更後のレコード
+					String afterStr = d.getRevised().getLines().get(i);
+					String[] afterItems = new String[0];
+
+					try {
+						afterItems = csvParser.parseLine(afterStr);
+					} catch (IOException e) {
+						throw new ApplicationException(e.getMessage(), e);
+					}
+
+					List<Item> beforeColumns = new ArrayList<>();
+					beforeColumns.add(new Item("Change(変更前)", FILL_PATTERN.NOTHING.getText()));
+
+					for (int j = 0; j < beforeItems.length; j++) {
+						beforeColumns.add(new Item(beforeItems[j], FILL_PATTERN.NOTHING.getText()));
+					}
+
+					List<Item> afterColumns = new ArrayList<>();
+					afterColumns.add(new Item("Change(変更後)", FILL_PATTERN.NOTHING.getText()));
+
+					for (int j = 0; j < afterItems.length; j++) {
+						afterColumns.add(new Item(afterItems[j], FILL_PATTERN.NOTHING.getText()));
+					}
+
+					// before/after の異なる値のみ色替え
+					for (int j = 0; j < beforeItems.length; j++) {
+						if (!StringUtils.equals(getElement(beforeItems, j), getElement(afterItems, j))) {
+							beforeColumns.get(j + 1).setStyle(FILL_PATTERN.CHANGE.getText());
+							afterColumns.get(j + 1).setStyle(FILL_PATTERN.CHANGE.getText());
+						}
+					}
+
+					delta.getDetails().add(beforeColumns);
+					delta.getDetails().add(afterColumns);
+
+				}
+
 			} else if (before < after) {
+
 				delta.setCreate(delta.getCreate() + after - before);
+
+				// 追加されたレコード
+				for (int i = 0; i < after; i++) {
+
+					String afterStr = d.getRevised().getLines().get(i);
+					String[] afterItems = new String[0];
+
+					try {
+						afterItems = csvParser.parseLine(afterStr);
+					} catch (IOException e) {
+						throw new ApplicationException(e.getMessage(), e);
+					}
+
+					List<Item> columns = new ArrayList<>();
+
+					columns.add(new Item("Add", FILL_PATTERN.NOTHING.getText()));
+
+					for (int j = 0; j < afterItems.length; j++) {
+						columns.add(new Item(getElement(afterItems, j), FILL_PATTERN.ADD.getText()));
+					}
+
+					delta.getDetails().add(columns);
+
+				}
+
 			} else if (before > after) {
 				delta.setDelete(delta.getDelete() + before - after);
+
+				for (int i = 0; i < before; i++) {
+
+					// 変更前のレコード
+					String beforeStr = d.getOriginal().getLines().get(i);
+					String[] beforeItems = new String[0];
+
+					try {
+						beforeItems = csvParser.parseLine(beforeStr);
+					} catch (IOException e) {
+						throw new ApplicationException(e.getMessage(), e);
+					}
+
+					List<Item> columns = new ArrayList<>();
+
+					columns.add(new Item("Delete", FILL_PATTERN.NOTHING.getText()));
+
+					for (int j = 0; j < beforeItems.length; j++) {
+						columns.add(new Item(getElement(beforeItems, j), FILL_PATTERN.DELETE.getText()));
+					}
+					delta.getDetails().add(columns);
+				}
+
 			}
 
 		}
@@ -183,6 +350,17 @@ public class DiffTask extends Task {
 		delta.setName(fileName);
 		return delta;
 
+	}
+
+	private String getElement(String[] array, int index) {
+
+		if (ArrayUtils.isNotEmpty(array)) {
+			if (0 < index && index < array.length) {
+				return array[index];
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -236,20 +414,22 @@ public class DiffTask extends Task {
 	 * @param inFile
 	 * @return
 	 */
-	protected List<Set<String>> readCSVFile(File inFile) {
+	protected List<String> readCSVFile(File inFile) {
 
-		List<Set<String>> csvList = new ArrayList<Set<String>>();
+		List<String> csvList = new ArrayList<String>();
 
 		try (InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(inFile), "utf-8");
-				CSVReader csvReader = new CSVReader(inputStreamReader);) {
+				BufferedReader br = new BufferedReader(inputStreamReader);) {
 
-			csvReader.forEach(item -> {
-				Set<String> tmp = new LinkedHashSet<String>();
-				for (String s : item) {
-					tmp.add(s);
+			LineReader lineReader = new LineReader(br, false);
+
+			while (true) {
+				String s = lineReader.readLine();
+				if (s == null) {
+					break;
 				}
-				csvList.add(tmp);
-			});
+				csvList.add(s);
+			}
 
 			return csvList;
 

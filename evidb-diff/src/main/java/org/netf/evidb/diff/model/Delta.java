@@ -1,5 +1,7 @@
 package org.netf.evidb.diff.model;
 
+import java.util.Collection;
+
 import lombok.Data;
 
 @Data
@@ -10,4 +12,6 @@ public class Delta {
 	private int create;
 	private int update;
 	private int delete;
+	private Collection<Collection<Item>> details;
+
 }
