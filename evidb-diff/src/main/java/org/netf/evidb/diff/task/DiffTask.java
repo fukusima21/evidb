@@ -58,24 +58,28 @@ public class DiffTask extends Task {
 
 	private enum FILL_PATTERN {
 
-		NOTHING(FillPattern.NOFILL.toString(), "white"), //
-		HEADER(FillPattern.SOLID.toString(), "lightgreen"), //
-		CHANGE(FillPattern.SOLID.toString(), "yellow"), //
-		ADD(FillPattern.SOLID.toString(), "skyblue"), //
-		DELETE(FillPattern.SOLID.toString(), "grey25percent");
+		NOTHING(FillPattern.NOFILL.toString(), "white", "normal"), //
+		HEADER(FillPattern.SOLID.toString(), "lightgreen", "bold"), //
+		CHANGE(FillPattern.SOLID.toString(), "gold", "normal"), //
+		ADD(FillPattern.SOLID.toString(), "skyblue", "normal"), //
+		DELETE(FillPattern.SOLID.toString(), "grey25percent", "normal");
 
 		private String fillPattern;
 		private String fillColor;
+		private String fontWeight;
 
-		private FILL_PATTERN(String fillPattern, String fillColor) {
+		private FILL_PATTERN(String fillPattern, String fillColor, String fontWeight) {
 			this.fillPattern = fillPattern;
 			this.fillColor = fillColor;
+			this.fontWeight = fontWeight;
 		}
 
 		public String getText() {
-			return "fill-pattern: " + fillPattern + ";" +
-					"fill-foreground-color:" + fillColor + ";" +
-					"fill-background-color: white;";
+			return "fill-pattern: " + fillPattern + ";" + //
+					"fill-foreground-color:" + fillColor + ";" + //
+					"fill-background-color: white;" + //
+					"font-weight: " + fontWeight + ";" + //
+					"";
 		}
 	};
 
