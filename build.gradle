@@ -6,6 +6,8 @@ allprojects  {
 subprojects {
   apply plugin: 'java'
   apply plugin: 'eclipse'
+  apply plugin: 'maven'
+  apply plugin: 'maven-publish'
 
   repositories {
     mavenCentral()
@@ -45,6 +47,27 @@ subprojects {
     	    }
 	    }
 	}
+  }
+
+  task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+  }
+
+  publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            artifact sourceJar {
+                classifier "sources"
+            }
+        }
+    }
+    repositories {
+        maven {
+            url "$System.env.USERPROFILE/.m2/repository"
+        }
+    }
   }
 
 }
