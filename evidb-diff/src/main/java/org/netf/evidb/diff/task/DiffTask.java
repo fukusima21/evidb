@@ -118,6 +118,8 @@ public class DiffTask extends Task {
 		} else {
 		}
 
+		// 差分データをレポート
+		diffAll();
 	}
 
 	/**

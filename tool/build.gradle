@@ -1,0 +1,61 @@
+apply plugin: 'java'
+
+configurations {
+    sqlGenRuntime
+    dumpRuntime
+    diffRuntime
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    sqlGenRuntime 'org.postgresql:postgresql:42.0.0'
+    sqlGenRuntime 'org.netf.evidb:evidb-sqlgen:1.0-SNAPSHOT'
+    dumpRuntime 'org.netf.evidb:evidb-dump:1.0-SNAPSHOT'
+    dumpRuntime 'org.postgresql:postgresql:42.0.0'
+    diffRuntime 'org.netf.evidb:evidb-diff:1.0-SNAPSHOT'
+}
+
+task sqlgen << {
+
+    ant.taskdef( resource: 'sqlgentask.properties' , classpath: configurations.sqlGenRuntime.asPath )
+
+    ant.sqlgen( url: 'jdbc:postgresql://localhost:5432/dvdrental'
+            , user : 'postgres'
+            , password: 'admin'
+            , driver    : 'org.postgresql.Driver'
+            , dialect : 'postgres'
+            , tableTypes : 'TABLE'
+            , outputPath : './sqlgen.yml'
+            , tableNamePattern             : '.*'
+            , ignoredTableNamePattern: ''
+    )
+
+}
+
+task dump << {
+
+    ant.taskdef( resource: 'dumptask.properties' , classpath: configurations.dumpRuntime.asPath )
+
+    ant.dump( url: 'jdbc:postgresql://localhost:5432/dvdrental'
+            , user : 'postgres'
+            , password: 'admin'
+            , driver    : 'org.postgresql.Driver'
+            , outputDir : './dump'
+            , configFile : './sqlgen.yml'
+    )
+
+}
+
+task diff << {
+
+    ant.taskdef( resource: 'difftask.properties' , classpath: configurations.diffRuntime.asPath )
+
+    ant.diff( dumpDir: './dump'
+            , reportDir : './report'
+    )
+
+}
