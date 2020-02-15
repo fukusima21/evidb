@@ -55,7 +55,7 @@ task diff << {
     ant.taskdef( resource: 'difftask.properties' , classpath: configurations.diffRuntime.asPath )
 
     ant.diff( dumpDir: './dump'
-            , reportDir : './report'
+            , reportDir : './diff'
     )
 
 }
