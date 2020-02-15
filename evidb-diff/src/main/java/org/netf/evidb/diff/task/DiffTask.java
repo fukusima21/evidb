@@ -185,8 +185,7 @@ public class DiffTask extends Task {
 
 		ExcelTransformer transformer = new ExcelTransformer();
 
-		try (InputStream in = Thread.currentThread().getContextClassLoader()
-				.getResourceAsStream("org/netf/evidb/diff/template/report.xlsx");
+		try (InputStream in = this.getClass().getResourceAsStream("/org/netf/evidb/diff/template/report.xlsx");
 				OutputStream out = new FileOutputStream(new File(reportDir, reportFile))) {
 			Workbook workbook = transformer.transform(in, templateSheetNames, sheetNames, params);
 			workbook.write(out);
