@@ -284,6 +284,7 @@ public class DiffTask extends Task {
 
 					// before/after の異なる値のみ色替え
 					for (int j = 0; j < beforeItems.length; j++) {
+						String element = getElement(beforeItems, j);
 						if (!StringUtils.equals(getElement(beforeItems, j), getElement(afterItems, j))) {
 							beforeColumns.get(j + 1).setStyle(FILL_PATTERN.CHANGE.getText());
 							afterColumns.get(j + 1).setStyle(FILL_PATTERN.CHANGE.getText());
@@ -360,7 +361,7 @@ public class DiffTask extends Task {
 	private String getElement(String[] array, int index) {
 
 		if (ArrayUtils.isNotEmpty(array)) {
-			if (0 < index && index < array.length) {
+			if (0 <= index && index < array.length) {
 				return array[index];
 			}
 		}
