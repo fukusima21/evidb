@@ -10,11 +10,13 @@ public class DumpTaskTest {
 	@Test
 	public void testExecute() throws Exception {
 
-		String configFile = Thread.currentThread().getContextClassLoader().getResource("sqlgen.yml").getFile();
-
 		DumpTask dumptask = new DumpTask();
 
+		String configFile = this.getClass().getResource("./sqlgen.yml").toURI().getPath();
 		dumptask.setConfigFile(configFile);
+
+		String dumpDir = this.getClass().getResource("./dump").toURI().getPath();
+		dumptask.setOutputDir(dumpDir);
 
 		dumptask.setUser("postgres");
 		dumptask.setPassword("admin");
