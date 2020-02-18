@@ -1,5 +1,7 @@
 apply plugin: 'java'
 
+def root = "$rootDir"
+
 configurations {
     sqlGenRuntime
     dumpRuntime
@@ -19,7 +21,7 @@ dependencies {
     diffRuntime 'org.netf.evidb:evidb-diff:1.0-SNAPSHOT'
 }
 
-task sqlgen << {
+task sqlgen doLast {
 
     ant.taskdef( resource: 'sqlgentask.properties' , classpath: configurations.sqlGenRuntime.asPath )
 
@@ -29,14 +31,14 @@ task sqlgen << {
             , driver    : 'org.postgresql.Driver'
             , dialect : 'postgres'
             , tableTypes : 'TABLE'
-            , outputPath : './sqlgen.yml'
+            , outputPath : root + './sqlgen.yml'
             , tableNamePattern             : '.*'
             , ignoredTableNamePattern: ''
     )
 
 }
 
-task dump << {
+task dump doLast {
 
     ant.taskdef( resource: 'dumptask.properties' , classpath: configurations.dumpRuntime.asPath )
 
@@ -44,18 +46,18 @@ task dump << {
             , user : 'postgres'
             , password: 'admin'
             , driver    : 'org.postgresql.Driver'
-            , outputDir : './dump'
-            , configFile : './sqlgen.yml'
+            , outputDir : root + './dump'
+            , configFile : root + './sqlgen.yml'
     )
 
 }
 
-task diff << {
+task diff doLast {
 
     ant.taskdef( resource: 'difftask.properties' , classpath: configurations.diffRuntime.asPath )
 
-    ant.diff( dumpDir: './dump'
-            , reportDir : './diff'
+    ant.diff( dumpDir: root + './dump'
+            , reportDir : root + './diff'
     )
 
 }

@@ -1,14 +1,25 @@
 
 description = 'evidb-dump'
 dependencies {
-  compile project(':evidb-core')
-    compile group: 'org.apache.ant', name: 'ant', version:'1.10.4'
-    compile group: 'ch.qos.logback', name: 'logback-classic', version:'1.2.3'
-    compile group: 'org.apache.commons', name: 'commons-lang3', version:'3.7'
-    compile group: 'org.thymeleaf', name: 'thymeleaf', version:'3.0.11.RELEASE'
-    compile group: 'com.opencsv', name: 'opencsv', version:'4.4'
-    compile group: 'org.yaml', name: 'snakeyaml', version:'1.23'
-    compile group: 'org.seasar.doma', name: 'doma', version:'2.21.0'
-    testCompile group: 'junit', name: 'junit', version:'4.12'
-    testCompile group: 'org.postgresql', name: 'postgresql', version:'42.2.2'
+  implementation project(':evidb-core')
+  implementation 'org.apache.ant:ant:1.10.4'
+  implementation 'org.apache.commons:commons-lang3:3.7'
+  implementation 'org.thymeleaf:thymeleaf:3.0.11.RELEASE'
+  implementation 'com.opencsv:opencsv:4.4'
+  implementation 'org.yaml:snakeyaml:1.23'
+  implementation 'org.seasar.doma:doma:2.21.0'
+  annotationProcessor 'org.seasar.doma:doma:2.21.0'
+  testImplementation 'org.postgresql:postgresql:42.2.2'
+}
+
+task copyDomaResources(type: Sync)  {
+  from sourceSets.main.resources.srcDirs
+  into compileJava.destinationDir
+  include 'doma.compile.config'
+  include 'META-INF/**/*.sql'
+  include 'META-INF/**/*.script'
+}
+
+compileJava {
+  dependsOn copyDomaResources
 }

@@ -22,31 +22,29 @@ subprojects {
   }
 
   dependencies {
-    compileOnly group: 'org.projectlombok', name: 'lombok', version:'1.18.4'
+    implementation 'ch.qos.logback:logback-classic:1.2.3'
+    annotationProcessor 'org.projectlombok:lombok:1.18.8'
+    compileOnly 'org.projectlombok:lombok:1.18.8'
+    testImplementation 'junit:junit:4.12'
   }
-
-  // DOMA2用設定
-  // JavaクラスとSQLファイルの出力先ディレクトリを同じにする
-  processResources.destinationDir = compileJava.destinationDir
-
-  // コンパイルより前にSQLファイルを出力先ディレクトリにコピーするために依存関係を逆転する
-  compileJava.dependsOn processResources
 
   eclipse {
     classpath {
       defaultOutputDir = file('build/classes/java/main')
-
-        file {
-          whenMerged {
-	        	entries.each { source ->
-					if (source.kind == 'src' && !source.path.startsWith('/')) {
-						// only Source-folders in the project starting with '/' are project-references
-						source.output = null
-        			}
-				}
-    	    }
-	    }
-	}
+      file {
+        whenMerged {
+            entries.each { source ->
+              if (source.kind == 'src' && !source.path.startsWith('/')) {
+                if (source.path.indexOf("/test") >= 0) {
+                  source.output = 'build/classes/test/main'
+                } else {
+                  source.output = 'build/classes/java/main'
+                }
+            }
+          }
+        }
+      }
+    }
   }
 
   task sourceJar(type: Jar) {
