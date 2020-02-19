@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.StringWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -28,7 +29,8 @@ import org.netf.evidb.core.exception.ApplicationException;
 import org.netf.evidb.diff.model.Item;
 
 import com.opencsv.CSVParser;
-import com.opencsv.stream.reader.LineReader;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
 
 import difflib.Delta;
 import difflib.DiffUtils;
@@ -425,17 +427,22 @@ public class DiffTask extends Task {
 
 		List<String> csvList = new ArrayList<String>();
 
-		try (InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(inFile), "utf-8");
-				BufferedReader br = new BufferedReader(inputStreamReader);) {
+		try (
+				CSVReader csvReader = new CSVReader(
+						new BufferedReader(new InputStreamReader(new FileInputStream(inFile), "utf-8"))); //
 
-			LineReader lineReader = new LineReader(br, false);
-
+		) {
 			while (true) {
-				String s = lineReader.readLine();
+				String[] s = csvReader.readNext();
 				if (s == null) {
 					break;
 				}
-				csvList.add(s);
+				StringWriter sw = new StringWriter();
+				CSVWriter csvWriter = new CSVWriter(sw);
+				csvWriter.writeNext(s);
+				csvWriter.flush();
+				csvList.add(StringUtils.substring(sw.toString(), 0, sw.toString().length() - 1));
+				csvWriter.close();
 			}
 
 			return csvList;
