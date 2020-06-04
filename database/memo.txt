@@ -1,2 +1,2 @@
 http://www.postgresqltutorial.com/postgresql-sample-database/
-こっちの修正は？
+を参考にしている。
