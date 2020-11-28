@@ -3,7 +3,7 @@ settings:
 [# th:each="tableMeta : ${tableMetas}"]    - table-name : [( ${tableMeta.name} )]
       table-comment : [( ${tableMeta.comment} )]
       column-name :
-    [# th:each="columnMeta,stat : ${tableMeta.columnMetas}"]    [( ${columnMeta.name} )] : [( ${columnMeta.comment} )]
+    [# th:each="columnMeta,stat : ${tableMeta.columnMetas}"]    [( ${columnMeta.name} )] : [( ${#stringHelper.removeNewLine(columnMeta.comment)} )]
     [/]  query : |
         SELECT
           [# th:each="columnMeta,stat : ${tableMeta.columnMetas}"][( ${stat.first ? '':','} )] [( ${columnMeta.name} )] [/]

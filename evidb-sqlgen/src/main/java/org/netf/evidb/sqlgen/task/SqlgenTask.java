@@ -22,6 +22,7 @@ import org.netf.evidb.core.dialect.DialectRegistry;
 import org.netf.evidb.core.exception.ApplicationException;
 import org.netf.evidb.core.meta.TableMeta;
 import org.netf.evidb.core.meta.TableMetaReader;
+import org.netf.evidb.sqlgen.thymeleaf.dialect.HelperDialect;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.templatemode.TemplateMode;
@@ -91,6 +92,7 @@ public class SqlgenTask extends Task {
 
 		TemplateEngine templateEngine = new TemplateEngine();
 		addTemplateResolver(templateEngine);
+		templateEngine.addDialect(new HelperDialect());
 
 		Context context = new Context();
 
